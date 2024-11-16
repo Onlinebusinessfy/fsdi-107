@@ -1,6 +1,6 @@
 from flask import Flask, json, request
 from config import db
-
+from bson.objectid import ObjectId
 
 app= Flask(__name__)
 
@@ -82,8 +82,52 @@ def patch_products(index):
     else:
         return "That index does not exist"
     
+
+
+
+#Final Report
 @app.get("/api/catalog")
 def get_catalog():
-    return json.dumps(list_name)
+    catalog_db=[]
+    cursor=db.catalog.find({})
+    for product in cursor:
+        catalog_db.append(fix_id(product))
+    return json.dumps(catalog_db)
+
+@app.post("/api/catalog")
+def save_list():
+    item=request.get_json()
+    print(item)
+    db.catalog.insert_one(item)
+    return json.dumps(fix_id(item))
+
+@app.delete("/api/catalog/<string:index>")
+def delete_catalog(index):
+    db.catalog.delete_one({"_id":ObjectId(index)})
+    return json.dumps(index)
+
+@app.get("/api/reports/total")
+def get_total():
+    total = 0
+    cursor = db.catalog.find({})
+    for product in cursor:
+        price = product.get('price') or product.get('Price')
+        if price and isinstance(price, (int, float)):
+            total += float(price) 
+    return json.dumps(total)
+
+
+@app.get("/api/products/<string:category>")
+def get_products_by_category(category):
+    cursor=db.catalog.find({"category":category})
+    products_db=[]
+    for product in cursor:
+        if "category" in product and product["category"]==category:
+            print(product)
+            products_db.append(fix_id(product))
+    if len(products_db)==0:
+            return "No products in that category"
+    return json.dumps(products_db)
 
 app.run(debug=True)
+
