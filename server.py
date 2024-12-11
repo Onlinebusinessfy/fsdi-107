@@ -1,8 +1,12 @@
-from flask import Flask, json, request
+from flask import Flask, json, request, abort
 from config import db
 from bson.objectid import ObjectId
+from flask_cors import CORS
 
 app= Flask(__name__)
+CORS(app) #warning this disables CORS policy
+
+
 
 @app.get("/")
 def home():
@@ -41,21 +45,21 @@ def fix_id(obj):
     obj["_id"] = str(obj["_id"])
     return obj
 
-@app.get("/api/products")
-def get_products():
-    products_db=[]
-    cursor=db.products.find({})
-    for prod in cursor:
-        products_db.append(fix_id(prod))
-    return json.dumps(products_db)
+# @app.get("/api/products")
+# def get_products():
+#     products_db=[]
+#     cursor=db.products.find({})
+#     for prod in cursor:
+#         products_db.append(fix_id(prod))
+#     return json.dumps(products_db)
 
-@app.post("/api/products")
-def save_products():
-    item=request.get_json()
-    print(item)
-    # products.append(item)
-    db.products.insert_one(item)
-    return json.dumps(item)
+# @app.post("/api/products")
+# def save_products():
+#     item=request.get_json()
+#     print(item)
+#     # products.append(item)
+#     db.products.insert_one(item)
+#     return json.dumps(item)
 
 @app.put("/api/products/<int:index>")
 def update_products(index):
@@ -128,6 +132,38 @@ def get_products_by_category(category):
     if len(products_db)==0:
             return "No products in that category"
     return json.dumps(products_db)
+
+
+
+###########################
+#########COUPONS###########
+###########################
+
+@app.post("/api/coupons")
+def save_coupon():
+    item=request.get_json()
+    db.coupons.insert_one(item)
+    return json.dumps(fix_id(item))
+
+@app.get("/api/coupons")
+def get_coupons():
+    coupons_db=[]
+    cursor = db.coupons.find({})
+    for coupon in cursor:
+        coupons_db.append(fix_id(coupon))
+    return json.dumps(coupons_db)
+
+@app.get("/api/coupons/<code>")
+def validate_coupon(code):
+    coupon=db.coupons.find_one({"code":code})
+    if coupon == None:
+        print("Error: invalid coupon")
+        return abort(404, "Invalid Code")
+    
+    return json.dumps(fix_id(coupon))
+
+
+
 
 app.run(debug=True)
 
