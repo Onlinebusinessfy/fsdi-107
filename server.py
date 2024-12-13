@@ -95,7 +95,8 @@ def get_catalog():
     catalog_db=[]
     cursor=db.catalog.find({})
     for product in cursor:
-        catalog_db.append(fix_id(product))
+        if "title" in product:
+            catalog_db.append(fix_id(product))
     return json.dumps(catalog_db)
 
 @app.post("/api/catalog")
